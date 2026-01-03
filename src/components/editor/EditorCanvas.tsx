@@ -1,15 +1,10 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { Plus } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import { EditorBlock } from './EditorBlock';
-import { ArrowConnections } from './ArrowConnections';
 import { cn } from '@/lib/utils';
 
-interface EditorCanvasProps {
-  pageTabRefs: Map<string, HTMLElement>;
-}
-
-export const EditorCanvas: React.FC<EditorCanvasProps> = ({ pageTabRefs }) => {
+export const EditorCanvas: React.FC = () => {
   const {
     pages,
     activePageId,
@@ -23,8 +18,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({ pageTabRefs }) => {
 
   const activePage = pages.find((p) => p.id === activePageId);
   const blocks = activePage?.blocks || [];
-
-  const canvasRef = useRef<HTMLDivElement>(null);
 
   // Find the last (topmost) block
   const lastBlock = blocks.length > 0 
@@ -46,7 +39,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({ pageTabRefs }) => {
       onClick={handleCanvasClick}
     >
       <div
-        ref={canvasRef}
         className={cn(
           'relative bg-card shadow-xl rounded-lg transition-all duration-300',
           !isPreviewMode && 'canvas-grid',
@@ -54,9 +46,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({ pageTabRefs }) => {
         )}
         style={{ minHeight: '100%' }}
       >
-        {/* Arrow connections */}
-        <ArrowConnections canvasRef={canvasRef} pageTabRefs={pageTabRefs} />
-
         {blocks.map((block) => {
           const isFaded = !showAllBlocks && !isPreviewMode && lastBlock && block.id !== lastBlock.id && block.id !== selectedBlockId;
           
