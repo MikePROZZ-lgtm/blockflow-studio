@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Plus, Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import { cn } from '@/lib/utils';
 
-export const EditorToolbar: React.FC = () => {
+interface EditorToolbarProps {
+  onPageTabsUpdate?: (refs: Map<string, HTMLElement>) => void;
+}
+
+export const EditorToolbar: React.FC<EditorToolbarProps> = ({ onPageTabsUpdate }) => {
   const {
     pages,
     activePageId,
@@ -36,6 +40,25 @@ export const EditorToolbar: React.FC = () => {
     );
   }
 
+  const pageTabRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  useEffect(() => {
+    if (onPageTabsUpdate) {
+      onPageTabsUpdate(pageTabRefs.current);
+    }
+  }, [pages, onPageTabsUpdate]);
+
+  const setPageTabRef = (pageId: string, el: HTMLElement | null) => {
+    if (el) {
+      pageTabRefs.current.set(pageId, el);
+    } else {
+      pageTabRefs.current.delete(pageId);
+    }
+    if (onPageTabsUpdate) {
+      onPageTabsUpdate(new Map(pageTabRefs.current));
+    }
+  };
+
   return (
     <div className="h-14 bg-card border-b border-toolbar-border flex items-center gap-2 px-4 animate-fade-in">
       {/* Page tabs */}
@@ -43,6 +66,8 @@ export const EditorToolbar: React.FC = () => {
         {pages.map((page) => (
           <div
             key={page.id}
+            ref={(el) => setPageTabRef(page.id, el)}
+            data-page-id={page.id}
             className={cn(
               'group relative flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono text-sm cursor-pointer transition-smooth',
               activePageId === page.id
