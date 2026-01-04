@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { X, Link2 } from 'lucide-react';
+import { X, Link2, Image } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import type { Block } from '@/types/editor';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ interface EditorBlockProps {
   isSelected: boolean;
   isFaded: boolean;
   isPreview: boolean;
+  showOutline?: boolean;
 }
 
 export const EditorBlock: React.FC<EditorBlockProps> = ({
@@ -16,6 +17,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
   isSelected,
   isFaded,
   isPreview,
+  showOutline,
 }) => {
   const {
     pages,
@@ -31,8 +33,11 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
 
   const blockRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const contentImageInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
+  const [isDraggingText, setIsDraggingText] = useState(false);
   const [resizeDir, setResizeDir] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showLinkMenu, setShowLinkMenu] = useState(false);
@@ -51,13 +56,33 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isPreview) return;
     if ((e.target as HTMLElement).closest('.resize-handle') || 
-        (e.target as HTMLElement).closest('.block-controls')) return;
+        (e.target as HTMLElement).closest('.block-controls') ||
+        (e.target as HTMLElement).closest('.text-content')) return;
     
     e.preventDefault();
     selectBlock(block.id);
     bringToFront(block.id);
     setIsDragging(true);
     setDragStart({ x: e.clientX - block.x, y: e.clientY - block.y });
+  };
+
+  // Text drag handling
+  const handleTextMouseDown = (e: React.MouseEvent) => {
+    if (isPreview) return;
+    if (e.button !== 0) return; // Only left click
+    
+    // If clicking to edit text, don't drag
+    if (document.activeElement === textRef.current) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    selectBlock(block.id);
+    setIsDraggingText(true);
+    setDragStart({ 
+      x: e.clientX - (block.textX || 0), 
+      y: e.clientY - (block.textY || 0) 
+    });
+    saveToHistory();
   };
 
   // Resize handling
@@ -76,6 +101,13 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
       updateBlock(block.id, {
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
+      });
+    } else if (isDraggingText) {
+      const newTextX = e.clientX - dragStart.x;
+      const newTextY = e.clientY - dragStart.y;
+      updateBlock(block.id, {
+        textX: newTextX,
+        textY: newTextY,
       });
     } else if (isResizing && resizeDir) {
       const dx = e.clientX - dragStart.x;
@@ -101,7 +133,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
       updateBlock(block.id, updates);
       setDragStart({ x: e.clientX, y: e.clientY });
     }
-  }, [isDragging, isResizing, resizeDir, dragStart, block, updateBlock]);
+  }, [isDragging, isDraggingText, isResizing, resizeDir, dragStart, block, updateBlock]);
 
   const handleMouseUp = useCallback(() => {
     if (isDragging) {
@@ -109,11 +141,12 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
     }
     setIsDragging(false);
     setIsResizing(false);
+    setIsDraggingText(false);
     setResizeDir(null);
   }, [isDragging, saveToHistory]);
 
   useEffect(() => {
-    if (isDragging || isResizing) {
+    if (isDragging || isResizing || isDraggingText) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
       return () => {
@@ -121,7 +154,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
         window.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isDragging, isResizing, handleMouseMove, handleMouseUp]);
+  }, [isDragging, isResizing, isDraggingText, handleMouseMove, handleMouseUp]);
 
   // Focus text editor when selected
   useEffect(() => {
@@ -151,6 +184,32 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
     setLinkSide(null);
   };
 
+  // Handle background image upload
+  const handleBackgroundImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        saveToHistory();
+        updateBlock(block.id, { backgroundImage: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle content image upload
+  const handleContentImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        saveToHistory();
+        updateBlock(block.id, { contentImage: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const bgColor = block.backgroundColor;
   const bgOpacity = block.backgroundOpacity / 100;
 
@@ -160,7 +219,8 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
       className={cn(
         'absolute group transition-shadow duration-200',
         isSelected && !isPreview && 'ring-2 ring-primary ring-offset-2',
-        isFaded && 'opacity-30 pointer-events-none',
+        isFaded && 'opacity-30',
+        showOutline && !isSelected && 'ring-1 ring-border/50',
         isPreview && block.linkedPageId && 'cursor-pointer hover:scale-[1.02] hover:shadow-block-active',
         isDragging && 'cursor-grabbing',
         !isDragging && !isPreview && 'cursor-grab'
@@ -173,6 +233,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
         zIndex: block.zIndex,
         backgroundColor: block.backgroundImage ? 'transparent' : bgColor,
         opacity: block.backgroundImage ? 1 : undefined,
+        pointerEvents: isFaded ? 'auto' : undefined,
       }}
       onMouseDown={handleMouseDown}
       onClick={handlePreviewClick}
@@ -194,17 +255,38 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
         )}
       </div>
 
-      {/* Content */}
+      {/* Content image */}
+      {block.contentImage && (
+        <div className="absolute inset-0 flex items-center justify-center p-2 pointer-events-none">
+          <img
+            src={block.contentImage}
+            alt=""
+            className="max-w-full max-h-full object-contain"
+          />
+        </div>
+      )}
+
+      {/* Text Content - draggable */}
       <div
         ref={textRef}
         contentEditable={!isPreview}
         suppressContentEditableWarning
         onBlur={handleTextChange}
-        className="relative z-10 w-full h-full p-3 outline-none overflow-hidden rounded-lg"
+        onMouseDown={handleTextMouseDown}
+        className={cn(
+          "text-content absolute p-3 outline-none overflow-hidden rounded-lg",
+          !isPreview && "cursor-move hover:bg-primary/5",
+          isDraggingText && "cursor-grabbing"
+        )}
         style={{
           fontFamily: block.fontFamily,
           fontSize: block.fontSize,
           color: block.textColor,
+          left: block.textX || 0,
+          top: block.textY || 0,
+          minWidth: 50,
+          minHeight: 20,
+          zIndex: 10,
         }}
       >
         {block.text}
@@ -212,17 +294,33 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
 
       {/* Link indicator */}
       {linkedPage && !isPreview && (
-        <div className="absolute -top-6 left-0 flex items-center gap-1 px-2 py-0.5 bg-primary text-primary-foreground rounded text-xs font-mono">
+        <div className="absolute -top-6 left-0 flex items-center gap-1 px-2 py-0.5 bg-primary text-primary-foreground rounded text-xs font-mono z-20">
           <Link2 className="w-3 h-3" />
           {linkedPage.name}
         </div>
       )}
 
+      {/* Hidden file inputs */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleBackgroundImageUpload}
+      />
+      <input
+        ref={contentImageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleContentImageUpload}
+      />
+
       {!isPreview && (
         <>
           {/* Delete button */}
           <button
-            className="block-controls absolute -top-3 -right-3 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:scale-110"
+            className="block-controls absolute -top-3 -right-3 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:scale-110 z-30"
             onClick={(e) => {
               e.stopPropagation();
               deleteBlock(block.id);
@@ -230,6 +328,30 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
           >
             <X className="w-3 h-3" />
           </button>
+
+          {/* Image upload buttons */}
+          <div className="block-controls absolute -top-3 left-1/2 -translate-x-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+            <button
+              className="p-1.5 bg-secondary text-secondary-foreground rounded-full shadow-md hover:scale-110 transition-transform"
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              title="Фон из файла"
+            >
+              <Image className="w-3 h-3" />
+            </button>
+            <button
+              className="p-1.5 bg-accent text-accent-foreground rounded-full shadow-md hover:scale-110 transition-transform"
+              onClick={(e) => {
+                e.stopPropagation();
+                contentImageInputRef.current?.click();
+              }}
+              title="Изображение-объект"
+            >
+              <Image className="w-3 h-3" />
+            </button>
+          </div>
 
           {/* Resize handles */}
           <div className="resize-handle absolute top-0 left-0 w-3 h-3 cursor-nw-resize" onMouseDown={(e) => handleResizeStart(e, 'nw')} />
@@ -248,7 +370,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
                 <button
                   key={side}
                   className={cn(
-                    'absolute w-5 h-5 bg-arrow rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-125 hover:bg-arrow-hover transition-all shadow-md',
+                    'absolute w-5 h-5 bg-arrow rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:scale-125 hover:bg-arrow-hover transition-all shadow-md z-30',
                     side === 'top' && 'top-0 left-1/2 -translate-x-1/2 -translate-y-1/2',
                     side === 'bottom' && 'bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2',
                     side === 'left' && 'left-0 top-1/2 -translate-x-1/2 -translate-y-1/2',

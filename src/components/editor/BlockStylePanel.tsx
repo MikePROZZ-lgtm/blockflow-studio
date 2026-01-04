@@ -147,7 +147,27 @@ export const BlockStylePanel: React.FC = () => {
             placeholder="https://..."
             className="h-9 font-mono text-xs"
           />
+          {selectedBlock.backgroundImage && (
+            <button
+              className="w-full text-xs text-destructive hover:underline"
+              onClick={() => handleChange('backgroundImage', '')}
+            >
+              Удалить фон
+            </button>
+          )}
         </div>
+
+        {selectedBlock.contentImage && (
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Изображение-объект</Label>
+            <button
+              className="w-full text-xs text-destructive hover:underline"
+              onClick={() => handleChange('contentImage', '')}
+            >
+              Удалить изображение
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="h-px bg-border" />
