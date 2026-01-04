@@ -4,6 +4,14 @@ import { useEditorStore } from '@/hooks/useEditorStore';
 import type { Block } from '@/types/editor';
 import { cn } from '@/lib/utils';
 
+// Convert hex to rgb values
+const hexToRgb = (hex: string): string => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result 
+    ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`
+    : '255, 255, 255';
+};
+
 interface EditorBlockProps {
   block: Block;
   isSelected: boolean;
@@ -219,8 +227,8 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
       className={cn(
         'absolute group transition-shadow duration-200',
         isSelected && !isPreview && 'ring-2 ring-primary ring-offset-2',
-        isFaded && 'opacity-30',
-        showOutline && !isSelected && 'ring-1 ring-border/50',
+        isFaded && !showOutline && 'opacity-30',
+        showOutline && !isSelected && 'ring-2 ring-primary/60 ring-dashed',
         isPreview && block.linkedPageId && 'cursor-pointer hover:scale-[1.02] hover:shadow-block-active',
         isDragging && 'cursor-grabbing',
         !isDragging && !isPreview && 'cursor-grab'
@@ -230,10 +238,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
         top: block.y,
         width: block.width,
         height: block.height,
-        zIndex: block.zIndex,
-        backgroundColor: block.backgroundImage ? 'transparent' : bgColor,
-        opacity: block.backgroundImage ? 1 : undefined,
-        pointerEvents: isFaded ? 'auto' : undefined,
+        zIndex: showOutline ? 9000 + block.zIndex : block.zIndex,
       }}
       onMouseDown={handleMouseDown}
       onClick={handlePreviewClick}
@@ -242,8 +247,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
       <div
         className="absolute inset-0 rounded-lg overflow-hidden"
         style={{
-          backgroundColor: bgColor,
-          opacity: bgOpacity,
+          backgroundColor: block.backgroundImage ? 'transparent' : `rgba(${hexToRgb(bgColor)}, ${bgOpacity})`,
         }}
       >
         {block.backgroundImage && (
@@ -251,6 +255,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
             src={block.backgroundImage}
             alt=""
             className="w-full h-full object-cover"
+            style={{ opacity: bgOpacity }}
           />
         )}
       </div>
