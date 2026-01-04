@@ -61,6 +61,37 @@ export const EditorCanvas: React.FC = () => {
           );
         })}
 
+        {/* Outline overlay for selecting covered blocks */}
+        {showAllBlocks && !isPreviewMode && (
+          <svg
+            className="absolute inset-0 z-[9998]"
+            width="100%"
+            height="100%"
+          >
+            {blocks.map((b) => (
+              <rect
+                key={b.id}
+                x={b.x}
+                y={b.y}
+                width={b.width}
+                height={b.height}
+                fill="transparent"
+                className="stroke-primary cursor-pointer"
+                strokeWidth={b.id === selectedBlockId ? 3 : 2}
+                strokeOpacity={b.id === selectedBlockId ? 1 : 0.55}
+                strokeDasharray="6 4"
+                vectorEffect="non-scaling-stroke"
+                pointerEvents="stroke"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  selectBlock(b.id);
+                }}
+              />
+            ))}
+          </svg>
+        )}
+
         {/* Add block button */}
         {!isPreviewMode && blocks.length === 0 && (
           <button

@@ -238,7 +238,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
         top: block.y,
         width: block.width,
         height: block.height,
-        zIndex: showOutline ? 9000 + block.zIndex : block.zIndex,
+        zIndex: block.zIndex,
       }}
       onMouseDown={handleMouseDown}
       onClick={handlePreviewClick}
