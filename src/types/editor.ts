@@ -5,12 +5,15 @@ export interface Block {
   width: number;
   height: number;
   text: string;
+  textX: number;
+  textY: number;
   fontSize: number;
   fontFamily: string;
   textColor: string;
   backgroundColor: string;
   backgroundOpacity: number;
   backgroundImage?: string;
+  contentImage?: string;
   zIndex: number;
   linkedPageId?: string;
 }

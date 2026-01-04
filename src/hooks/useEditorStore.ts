@@ -102,6 +102,8 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       width: 200,
       height: 100,
       text: '',
+      textX: 0,
+      textY: 0,
       fontSize: 16,
       fontFamily: 'Inter',
       textColor: '#1a1a2e',
