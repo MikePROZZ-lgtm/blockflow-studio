@@ -28,7 +28,7 @@ const createDefaultPage = (name: string): Page => ({
 });
 
 const initialState: EditorState = {
-  pages: [createDefaultPage('Страница 1')],
+  pages: [createDefaultPage('Page 1')],
   activePageId: '',
   selectedBlockId: null,
   deviceMode: 'desktop',
@@ -58,7 +58,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   addPage: () => {
     const { pages } = get();
     get().saveToHistory();
-    const newPage = createDefaultPage(`Страница ${pages.length + 1}`);
+    const newPage = createDefaultPage(`Page ${pages.length + 1}`);
     set({
       pages: [...pages, newPage],
       activePageId: newPage.id,

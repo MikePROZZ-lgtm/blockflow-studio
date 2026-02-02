@@ -102,7 +102,7 @@ export const EditorCanvas: React.FC = () => {
               <Plus className="w-7 h-7 text-primary" />
             </div>
             <span className="font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-              Добавить блок
+              Add Block
             </span>
           </button>
         )}
@@ -116,7 +116,7 @@ export const EditorCanvas: React.FC = () => {
           className="fixed bottom-8 right-80 z-[9999] flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-105 transition-transform font-medium"
         >
           <Plus className="w-5 h-5" />
-          Добавить блок
+          Add Block
         </button>
       )}
     </div>
