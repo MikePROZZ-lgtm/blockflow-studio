@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, X, FileText } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,38 @@ export const PagesSidebar: React.FC = () => {
     addPage,
     setActivePage,
     deletePage,
+    renamePage,
   } = useEditorStore();
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editingId && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingId]);
+
+  const startRename = (e: React.MouseEvent, pageId: string, currentName: string) => {
+    e.stopPropagation();
+    setEditingId(pageId);
+    setEditingName(currentName);
+  };
+
+  const commitRename = () => {
+    if (editingId && editingName.trim()) {
+      renamePage(editingId, editingName.trim());
+    }
+    setEditingId(null);
+    setEditingName('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') commitRename();
+    if (e.key === 'Escape') { setEditingId(null); setEditingName(''); }
+  };
 
   if (isPreviewMode) return null;
 
@@ -34,10 +65,30 @@ export const PagesSidebar: React.FC = () => {
                 : 'hover:bg-muted text-foreground'
             )}
             onClick={() => setActivePage(page.id)}
+            onDoubleClick={(e) => startRename(e, page.id, page.name)}
           >
             <FileText className="w-4 h-4 shrink-0" />
-            <span className="truncate flex-1">{page.name}</span>
-            {pages.length > 1 && (
+
+            {editingId === page.id ? (
+              <input
+                ref={inputRef}
+                value={editingName}
+                onChange={(e) => setEditingName(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={handleKeyDown}
+                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  'flex-1 bg-transparent outline-none border-b text-sm min-w-0',
+                  activePageId === page.id
+                    ? 'border-primary-foreground text-primary-foreground'
+                    : 'border-primary text-foreground'
+                )}
+              />
+            ) : (
+              <span className="truncate flex-1">{page.name}</span>
+            )}
+
+            {pages.length > 1 && editingId !== page.id && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
