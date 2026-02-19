@@ -113,7 +113,7 @@ export const EditorCanvas: React.FC = () => {
       {!isPreviewMode && blocks.length > 0 && (
         <button
           onClick={addBlock}
-          className="fixed bottom-8 right-80 z-[9999] flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-105 transition-transform font-medium"
+          className="fixed bottom-8 right-8 z-[9999] flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-105 transition-transform font-medium"
         >
           <Plus className="w-5 h-5" />
           Add Block
