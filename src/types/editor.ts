@@ -13,6 +13,7 @@ export interface Block {
   backgroundColor: string;
   backgroundOpacity: number;
   backgroundImage?: string;
+  backgroundSize?: 'cover' | 'contain' | 'auto' | '50%' | '75%' | '100%' | '125%' | '150%';
   contentImage?: string;
   zIndex: number;
   linkedPageId?: string;
