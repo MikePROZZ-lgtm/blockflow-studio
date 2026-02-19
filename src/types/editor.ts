@@ -15,6 +15,7 @@ export interface Block {
   backgroundImage?: string;
   backgroundSize?: 'cover' | 'contain' | 'auto' | '50%' | '75%' | '100%' | '125%' | '150%';
   contentImage?: string;
+  contentVideo?: string;
   zIndex: number;
   linkedPageId?: string;
 }

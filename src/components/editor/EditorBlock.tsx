@@ -227,8 +227,23 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
           )}
         </div>
 
+        {/* Content video — fills block proportionally */}
+        {block.contentVideo && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden rounded-lg">
+            <video
+              src={block.contentVideo}
+              className="w-full h-full object-contain"
+              autoPlay
+              loop
+              controls={isPreview}
+              playsInline
+              style={{ pointerEvents: isPreview ? 'auto' : 'none' }}
+            />
+          </div>
+        )}
+
         {/* Content image */}
-        {block.contentImage && (
+        {!block.contentVideo && block.contentImage && (
           <div className="absolute inset-0 flex items-center justify-center p-2 pointer-events-none">
             <img src={block.contentImage} alt="" className="max-w-full max-h-full object-contain" />
           </div>
