@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import { EditorBlock } from './EditorBlock';
+import { BlockContextMenu } from './BlockContextMenu';
 import { cn } from '@/lib/utils';
 
 export const EditorCanvas: React.FC = () => {
@@ -14,7 +15,10 @@ export const EditorCanvas: React.FC = () => {
     isPreviewMode,
     addBlock,
     selectBlock,
+    bringToFront,
   } = useEditorStore();
+
+  const [svgContextMenu, setSvgContextMenu] = useState<{ blockId: string; x: number; y: number } | null>(null);
 
   const activePage = pages.find((p) => p.id === activePageId);
   const blocks = activePage?.blocks || [];
@@ -68,7 +72,7 @@ export const EditorCanvas: React.FC = () => {
             width="100%"
             height="100%"
           >
-            {blocks.map((b) => (
+             {blocks.map((b) => (
               <rect
                 key={b.id}
                 x={b.x}
@@ -81,15 +85,33 @@ export const EditorCanvas: React.FC = () => {
                 strokeOpacity={b.id === selectedBlockId ? 1 : 0.55}
                 strokeDasharray="6 4"
                 vectorEffect="non-scaling-stroke"
-                pointerEvents="stroke"
+                pointerEvents="all"
                 onMouseDown={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   selectBlock(b.id);
+                  bringToFront(b.id);
+                }}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  selectBlock(b.id);
+                  bringToFront(b.id);
+                  setSvgContextMenu({ blockId: b.id, x: e.clientX, y: e.clientY });
                 }}
               />
             ))}
           </svg>
+        )}
+
+        {/* Context menu triggered from SVG overlay */}
+        {svgContextMenu && !isPreviewMode && (
+          <BlockContextMenu
+            blockId={svgContextMenu.blockId}
+            x={svgContextMenu.x}
+            y={svgContextMenu.y}
+            onClose={() => setSvgContextMenu(null)}
+          />
         )}
 
         {/* Add block button */}
