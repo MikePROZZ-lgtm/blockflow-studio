@@ -37,16 +37,17 @@ export const EditorCanvas: React.FC = () => {
   return (
     <div
       className={cn(
-        'flex-1 overflow-auto flex justify-center p-8',
+        'flex-1 overflow-auto flex',
+        deviceMode === 'mobile' ? 'justify-center p-8' : '',
         isPreviewMode ? 'bg-background' : 'bg-canvas'
       )}
       onClick={handleCanvasClick}
     >
       <div
         className={cn(
-          'relative bg-card shadow-xl rounded-lg transition-all duration-300',
+          'relative bg-card shadow-xl transition-all duration-300',
           !isPreviewMode && 'canvas-grid',
-          deviceMode === 'desktop' ? 'w-[1200px] min-h-[800px]' : 'w-[375px] min-h-[667px]'
+          deviceMode === 'desktop' ? 'w-full min-h-[800px]' : 'w-[375px] min-h-[667px]'
         )}
         style={{ minHeight: '100%' }}
       >
