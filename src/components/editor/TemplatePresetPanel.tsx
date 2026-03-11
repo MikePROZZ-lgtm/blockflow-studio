@@ -95,14 +95,6 @@ export const TemplatePresetPanel: React.FC<{ onClose: () => void }> = ({ onClose
               >
                 Button
               </span>
-            </div>
-              <span
-                className="ml-2 px-2 py-0.5 rounded text-white text-[10px]"
-                style={{ backgroundColor: preset.preview.accent }}
-              >
-                Кнопка
-              </span>
-            </div>
           </button>
         ))}
       </div>
