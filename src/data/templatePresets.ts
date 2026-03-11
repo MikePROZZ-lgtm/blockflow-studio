@@ -19,8 +19,8 @@ export interface TemplatePreset {
 export const templatePresets: TemplatePreset[] = [
   {
     id: 'minimalist',
-    name: 'Минимализм',
-    description: 'Чистый дизайн, много воздуха, спокойные тона',
+    name: 'Minimalist',
+    description: 'Clean design, lots of whitespace, calm tones',
     preview: { bg: '#f8f9fa', accent: '#212529', text: '#495057' },
     styles: {
       backgroundColor: '#f8f9fa',
@@ -32,8 +32,8 @@ export const templatePresets: TemplatePreset[] = [
   },
   {
     id: 'corporate',
-    name: 'Корпоративный',
-    description: 'Строгий и профессиональный, синие акценты',
+    name: 'Corporate',
+    description: 'Strict and professional, blue accents',
     preview: { bg: '#ffffff', accent: '#1e40af', text: '#1e3a5f' },
     styles: {
       backgroundColor: '#ffffff',
@@ -45,8 +45,8 @@ export const templatePresets: TemplatePreset[] = [
   },
   {
     id: 'creative',
-    name: 'Креативный',
-    description: 'Яркий и смелый, градиенты и насыщенные цвета',
+    name: 'Creative',
+    description: 'Bold and vibrant, gradients and rich colors',
     preview: { bg: '#fef3c7', accent: '#f59e0b', text: '#78350f' },
     styles: {
       backgroundColor: '#fef3c7',
@@ -58,8 +58,8 @@ export const templatePresets: TemplatePreset[] = [
   },
   {
     id: 'dark',
-    name: 'Тёмный',
-    description: 'Элегантная тёмная тема с контрастным текстом',
+    name: 'Dark',
+    description: 'Elegant dark theme with high-contrast text',
     preview: { bg: '#1a1a2e', accent: '#e94560', text: '#eaeaea' },
     styles: {
       backgroundColor: '#1a1a2e',
@@ -71,8 +71,8 @@ export const templatePresets: TemplatePreset[] = [
   },
   {
     id: 'nature',
-    name: 'Природа',
-    description: 'Натуральные зелёные тона, тёплая палитра',
+    name: 'Nature',
+    description: 'Natural green tones, warm palette',
     preview: { bg: '#f0fdf4', accent: '#16a34a', text: '#14532d' },
     styles: {
       backgroundColor: '#f0fdf4',
@@ -84,8 +84,8 @@ export const templatePresets: TemplatePreset[] = [
   },
   {
     id: 'retro',
-    name: 'Ретро',
-    description: 'Винтажный стиль с тёплыми приглушёнными цветами',
+    name: 'Retro',
+    description: 'Vintage style with warm muted colors',
     preview: { bg: '#fdf6e3', accent: '#cb4b16', text: '#586e75' },
     styles: {
       backgroundColor: '#fdf6e3',

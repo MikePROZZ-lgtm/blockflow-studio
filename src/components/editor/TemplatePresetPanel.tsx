@@ -34,7 +34,7 @@ export const TemplatePresetPanel: React.FC<{ onClose: () => void }> = ({ onClose
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Palette className="w-4 h-4 text-primary" />
-          <span className="font-semibold text-sm">Шаблоны</span>
+          <span className="font-semibold text-sm">Templates</span>
         </div>
         <button onClick={onClose} className="p-1 rounded-md hover:bg-secondary transition-smooth">
           <X className="w-4 h-4 text-muted-foreground" />
@@ -88,12 +88,12 @@ export const TemplatePresetPanel: React.FC<{ onClose: () => void }> = ({ onClose
                 fontFamily: preset.styles.fontFamily,
               }}
             >
-              <span>Пример текста</span>
+              <span>Sample text</span>
               <span
                 className="ml-2 px-2 py-0.5 rounded text-white text-[10px]"
                 style={{ backgroundColor: preset.preview.accent }}
               >
-                Кнопка
+                Button
               </span>
             </div>
           </button>
@@ -102,7 +102,7 @@ export const TemplatePresetPanel: React.FC<{ onClose: () => void }> = ({ onClose
 
       <div className="px-4 py-2 border-t border-border">
         <p className="text-[11px] text-muted-foreground text-center">
-          Применяется ко всем блокам текущей страницы
+          Applies to all blocks on the current page
         </p>
       </div>
     </div>

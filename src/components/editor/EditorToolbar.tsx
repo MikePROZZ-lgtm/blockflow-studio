@@ -46,20 +46,6 @@ export const EditorToolbar: React.FC = () => {
 
       <div className="flex-1" />
 
-      {/* Template presets */}
-      <button
-        onClick={() => setShowTemplates(!showTemplates)}
-        className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
-          showTemplates ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
-        )}
-      >
-        <Palette className="w-4 h-4" />
-        Шаблоны
-      </button>
-
-      <div className="w-px h-6 bg-border mx-1" />
-
       {/* Device toggle */}
       <div className="flex items-center bg-secondary rounded-lg p-0.5">
         <button
@@ -114,9 +100,20 @@ export const EditorToolbar: React.FC = () => {
         All Blocks
       </button>
 
+      {/* Template presets */}
+      <button
+        onClick={() => setShowTemplates(!showTemplates)}
+        className={cn(
+          'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
+          showTemplates ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
+        )}
+      >
+        <Palette className="w-4 h-4" />
+        Templates
+      </button>
+
       <div className="w-px h-6 bg-border mx-1" />
 
-      {/* Preview & Publish */}
       <button
         onClick={togglePreviewMode}
         className="flex items-center gap-2 px-4 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium text-sm hover:bg-muted transition-smooth"
