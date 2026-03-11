@@ -34,7 +34,7 @@ export const TemplatePresetPanel: React.FC<{ onClose: () => void }> = ({ onClose
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Palette className="w-4 h-4 text-primary" />
-          <span className="font-semibold text-sm">Шаблоны</span>
+          <span className="font-semibold text-sm">Templates</span>
         </div>
         <button onClick={onClose} className="p-1 rounded-md hover:bg-secondary transition-smooth">
           <X className="w-4 h-4 text-muted-foreground" />
