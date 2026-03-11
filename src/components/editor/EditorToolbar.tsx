@@ -1,7 +1,8 @@
-import React from 'react';
-import { Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X, Palette } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import { cn } from '@/lib/utils';
+import { TemplatePresetPanel } from './TemplatePresetPanel';
 
 export const EditorToolbar: React.FC = () => {
   const {
@@ -18,6 +19,7 @@ export const EditorToolbar: React.FC = () => {
     redo,
   } = useEditorStore();
 
+  const [showTemplates, setShowTemplates] = useState(false);
   const activePage = pages.find((p) => p.id === activePageId);
 
   if (isPreviewMode) {
@@ -36,13 +38,27 @@ export const EditorToolbar: React.FC = () => {
   }
 
   return (
-    <div className="h-14 bg-card border-b border-toolbar-border flex items-center gap-2 px-4 animate-fade-in">
+    <div className="h-14 bg-card border-b border-toolbar-border flex items-center gap-2 px-4 animate-fade-in relative">
       {/* Current page indicator */}
       <div className="font-mono text-sm text-muted-foreground">
         {activePage?.name || 'No page'}
       </div>
 
       <div className="flex-1" />
+
+      {/* Template presets */}
+      <button
+        onClick={() => setShowTemplates(!showTemplates)}
+        className={cn(
+          'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
+          showTemplates ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
+        )}
+      >
+        <Palette className="w-4 h-4" />
+        Шаблоны
+      </button>
+
+      <div className="w-px h-6 bg-border mx-1" />
 
       {/* Device toggle */}
       <div className="flex items-center bg-secondary rounded-lg p-0.5">
@@ -114,6 +130,11 @@ export const EditorToolbar: React.FC = () => {
         <Rocket className="w-4 h-4" />
         Publish
       </button>
+
+      {/* Template panel */}
+      {showTemplates && (
+        <TemplatePresetPanel onClose={() => setShowTemplates(false)} />
+      )}
     </div>
   );
 };
