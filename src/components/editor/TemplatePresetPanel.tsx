@@ -95,6 +95,7 @@ export const TemplatePresetPanel: React.FC<{ onClose: () => void }> = ({ onClose
               >
                 Button
               </span>
+            </div>
           </button>
         ))}
       </div>
