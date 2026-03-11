@@ -88,7 +88,14 @@ export const TemplatePresetPanel: React.FC<{ onClose: () => void }> = ({ onClose
                 fontFamily: preset.styles.fontFamily,
               }}
             >
-              <span>Пример текста</span>
+              <span>Sample text</span>
+              <span
+                className="ml-2 px-2 py-0.5 rounded text-white text-[10px]"
+                style={{ backgroundColor: preset.preview.accent }}
+              >
+                Button
+              </span>
+            </div>
               <span
                 className="ml-2 px-2 py-0.5 rounded text-white text-[10px]"
                 style={{ backgroundColor: preset.preview.accent }}
