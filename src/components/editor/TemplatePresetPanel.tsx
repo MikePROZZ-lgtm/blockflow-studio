@@ -102,7 +102,7 @@ export const TemplatePresetPanel: React.FC<{ onClose: () => void }> = ({ onClose
 
       <div className="px-4 py-2 border-t border-border">
         <p className="text-[11px] text-muted-foreground text-center">
-          Применяется ко всем блокам текущей страницы
+          Applies to all blocks on the current page
         </p>
       </div>
     </div>
