@@ -2,22 +2,26 @@ import React, { useState, useCallback } from 'react';
 import {
   Sparkles, Palette, FileText, Search, Share2, Zap,
   ChevronDown, Check, Loader2, X, Globe, Download,
-  Eye, Copy, Instagram, Linkedin, Facebook,
+  Eye, Copy, Instagram, Linkedin, Facebook, Pencil, RotateCcw,
+  CloudLightning,
 } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import { cn } from '@/lib/utils';
 import { getIndustries, getCategoriesByIndustry, getSubServices } from '@/ai/taxonomy';
 import { runAIPipeline, analyzeSkeleton, type PipelineStep } from '@/ai/orchestrator';
-import type { AIContext, AIPipelineResult, ContentLanguage, SEOPage, SMMPost } from '@/ai/types';
+import type { AIContext, AIPipelineResult, ContentLanguage, BlockContent, SEOPage, SMMPost } from '@/ai/types';
 import { LANGUAGE_LABELS } from '@/ai/types';
 import { exportSEOAsJSON, exportSEOAsHTML, exportSMMAsJSON, exportSMMAsCSV } from '@/ai/export';
 import { SEOPreviewModal } from './SEOPreviewModal';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface AIToolsPanelProps {
   onClose: () => void;
 }
 
 type Tab = 'config' | 'design' | 'content' | 'seo' | 'smm';
+type AIMode = 'local' | 'cloud';
 
 const STEP_LABELS: Record<PipelineStep, string> = {
   design: 'Design Theme',
@@ -54,6 +58,7 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
   const [targetCity, setTargetCity] = useState('');
   const [siteTopic, setSiteTopic] = useState('');
   const [language, setLanguage] = useState<ContentLanguage>('en');
+  const [aiMode, setAiMode] = useState<AIMode>('local');
 
   // Pipeline
   const [activeSteps, setActiveSteps] = useState<Set<PipelineStep>>(new Set(['design', 'content', 'seo', 'smm']));
@@ -64,6 +69,12 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
   const [tab, setTab] = useState<Tab>('config');
   const [showSEOPreview, setShowSEOPreview] = useState(false);
   const [copiedPost, setCopiedPost] = useState<number | null>(null);
+
+  // Inline editing
+  const [editingBlock, setEditingBlock] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<{ blockId: string; field: string } | null>(null);
+  const [editingSEO, setEditingSEO] = useState<string | null>(null);
+  const [editingSMM, setEditingSMM] = useState<number | null>(null);
 
   const industries = getIndustries();
   const categories = industry ? getCategoriesByIndustry(industry) : [];
@@ -86,6 +97,23 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
     targetCity, serviceCategory, industry, subServices, language,
   }), [pages, activePageId, siteTopic, targetCity, serviceCategory, industry, subServices, language]);
 
+  // ── Cloud AI call ─────────────────────────────
+  const callCloudAI = useCallback(async (module: string, context: AIContext) => {
+    const activePage = pages.find((p) => p.id === activePageId);
+    const payload: any = {
+      module,
+      context: {
+        ...context,
+        blocks: module === 'content' && activePage ? activePage.blocks : undefined,
+      },
+    };
+
+    const { data, error } = await supabase.functions.invoke('ai-generate', { body: payload });
+    if (error) throw new Error(error.message || 'Cloud AI call failed');
+    return data;
+  }, [pages, activePageId]);
+
+  // ── Apply helpers ─────────────────────────────
   const applyDesignToBlocks = useCallback((result: AIPipelineResult) => {
     if (!result.design) return;
     const { theme } = result.design;
@@ -99,6 +127,7 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
         fontFamily: theme.fonts.body,
       });
     }
+    toast.success('Design applied to blocks');
   }, [pages, activePageId, saveToHistory, updateBlock]);
 
   const applyContentToBlocks = useCallback((result: AIPipelineResult) => {
@@ -108,8 +137,29 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
       const text = [bc.headline, bc.subheadline, bc.description].filter(Boolean).join('\n\n');
       updateBlock(bc.blockId, { text });
     }
+    toast.success('Content applied to blocks');
   }, [saveToHistory, updateBlock]);
 
+  const applySingleBlockContent = useCallback((bc: BlockContent) => {
+    saveToHistory();
+    const text = [bc.headline, bc.subheadline, bc.description].filter(Boolean).join('\n\n');
+    updateBlock(bc.blockId, { text });
+    toast.success(`Applied "${bc.blockType}" block content`);
+  }, [saveToHistory, updateBlock]);
+
+  const applySingleBlockDesign = useCallback((blockId: string) => {
+    if (!results?.design) return;
+    const { theme } = results.design;
+    saveToHistory();
+    updateBlock(blockId, {
+      backgroundColor: theme.colors.background,
+      textColor: theme.colors.text,
+      fontFamily: theme.fonts.body,
+    });
+    toast.success('Design applied to block');
+  }, [results, saveToHistory, updateBlock]);
+
+  // ── Pipeline ──────────────────────────────────
   const runPipeline = useCallback(async () => {
     if (!canRun) return;
     setIsRunning(true);
@@ -121,27 +171,79 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
     console.log('AI Skeleton Analysis:', skeleton);
 
     try {
-      const pipelineResult = await runAIPipeline(context, {
-        steps: Array.from(activeSteps),
-        onStepStart: (step) => setCurrentStep(step),
-        onStepComplete: (step) => {
-          setCurrentStep(null);
+      if (aiMode === 'cloud') {
+        // Cloud AI mode
+        const pipelineResult: AIPipelineResult = {};
+        const steps = Array.from(activeSteps);
+
+        for (const step of steps) {
+          setCurrentStep(step);
+          try {
+            if (step === 'design') {
+              // Design stays local (no AI needed, just theme mapping)
+              const { aiDesignModule } = await import('@/ai/modules/ai-design');
+              pipelineResult.design = await aiDesignModule.run(context);
+            } else {
+              const cloudData = await callCloudAI(step, context);
+              if (step === 'content') {
+                // Map cloud response to BlockContent format
+                const activePage = pages.find((p) => p.id === activePageId);
+                const blocks = cloudData.blocks?.map((b: any, i: number) => ({
+                  page: activePage?.name || 'Page',
+                  blockId: activePage?.blocks[i]?.id || `block-${i}`,
+                  blockType: b.blockType || 'hero',
+                  headline: b.headline || '',
+                  subheadline: b.subheadline || '',
+                  description: b.description || '',
+                  cta: b.cta || '',
+                })) || [];
+                pipelineResult.content = { blocks };
+              } else if (step === 'seo') {
+                pipelineResult.seo = { pages: cloudData.pages || [] };
+              } else if (step === 'smm') {
+                pipelineResult.smm = { posts: cloudData.posts || [] };
+              }
+            }
+          } catch (err) {
+            console.error(`Cloud AI error for ${step}:`, err);
+            toast.error(`Cloud AI failed for ${STEP_LABELS[step]}. Falling back to local.`);
+            // Fallback to local
+            const localResult = await runAIPipeline(context, {
+              steps: [step],
+              onStepStart: () => {},
+              onStepComplete: () => {},
+            });
+            Object.assign(pipelineResult, localResult);
+          }
           setCompletedSteps((prev) => new Set([...prev, step]));
-        },
-      });
-      setResults(pipelineResult);
+        }
+        setResults(pipelineResult);
+      } else {
+        // Local mode
+        const pipelineResult = await runAIPipeline(context, {
+          steps: Array.from(activeSteps),
+          onStepStart: (step) => setCurrentStep(step),
+          onStepComplete: (step) => {
+            setCurrentStep(null);
+            setCompletedSteps((prev) => new Set([...prev, step]));
+          },
+        });
+        setResults(pipelineResult);
+      }
+
       // Switch to first available result tab
-      if (pipelineResult.design) setTab('design');
-      else if (pipelineResult.content) setTab('content');
-      else if (pipelineResult.seo) setTab('seo');
-      else if (pipelineResult.smm) setTab('smm');
+      if (activeSteps.has('design')) setTab('design');
+      else if (activeSteps.has('content')) setTab('content');
+      else if (activeSteps.has('seo')) setTab('seo');
+      else if (activeSteps.has('smm')) setTab('smm');
     } catch (err) {
       console.error('AI Pipeline error:', err);
+      toast.error('AI Pipeline failed');
     } finally {
       setIsRunning(false);
       setCurrentStep(null);
     }
-  }, [canRun, buildContext, activeSteps]);
+  }, [canRun, buildContext, activeSteps, aiMode, callCloudAI, pages, activePageId]);
 
   const applyResults = useCallback(() => {
     if (!results) return;
@@ -155,14 +257,49 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
     setTimeout(() => setCopiedPost(null), 1500);
   };
 
+  // ── Inline editing helpers ────────────────────
+  const updateContentBlock = (blockId: string, field: keyof BlockContent, value: string) => {
+    if (!results?.content) return;
+    setResults({
+      ...results,
+      content: {
+        blocks: results.content.blocks.map((b) =>
+          b.blockId === blockId ? { ...b, [field]: value } : b
+        ),
+      },
+    });
+  };
+
+  const updateSEOPage = (slug: string, field: keyof SEOPage, value: string) => {
+    if (!results?.seo) return;
+    setResults({
+      ...results,
+      seo: {
+        pages: results.seo.pages.map((p) =>
+          p.slug === slug ? { ...p, [field]: value } : p
+        ),
+      },
+    });
+  };
+
+  const updateSMMPost = (index: number, field: keyof SMMPost, value: string) => {
+    if (!results?.smm) return;
+    setResults({
+      ...results,
+      smm: {
+        posts: results.smm.posts.map((p, i) =>
+          i === index ? { ...p, [field]: value } : p
+        ),
+      },
+    });
+  };
+
   const resultTabs: { key: Tab; label: string; icon: React.ReactNode; available: boolean }[] = [
     { key: 'design', label: 'Design', icon: <Palette className="w-3.5 h-3.5" />, available: !!results?.design },
     { key: 'content', label: 'Content', icon: <FileText className="w-3.5 h-3.5" />, available: !!results?.content },
     { key: 'seo', label: 'SEO', icon: <Search className="w-3.5 h-3.5" />, available: !!results?.seo },
     { key: 'smm', label: 'SMM', icon: <Share2 className="w-3.5 h-3.5" />, available: !!results?.smm },
   ];
-
-  const hasResults = results && (results.design || results.content || results.seo || results.smm);
 
   return (
     <>
@@ -210,6 +347,36 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
         <div className="flex-1 overflow-y-auto">
           {tab === 'config' && (
             <div className="p-4 space-y-4">
+              {/* AI Mode Toggle */}
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">AI Mode</label>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setAiMode('local')}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors',
+                      aiMode === 'local' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
+                    )}
+                  >
+                    <Zap className="w-3 h-3" />
+                    Local (Mock)
+                  </button>
+                  <button
+                    onClick={() => setAiMode('cloud')}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium transition-colors',
+                      aiMode === 'cloud' ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
+                    )}
+                  >
+                    <CloudLightning className="w-3 h-3" />
+                    Cloud AI
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {aiMode === 'cloud' ? 'Uses Lovable Cloud AI for real content generation' : 'Uses local templates (instant, no credits)'}
+                </p>
+              </div>
+
               {/* Language */}
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Language</label>
@@ -296,7 +463,7 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
                     >
                       {STEP_ICONS[step]}
                       <span className="flex-1">{STEP_LABELS[step]}</span>
-                      {completedSteps.has(step) && <Check className="w-4 h-4 text-[hsl(var(--success))]" />}
+                      {completedSteps.has(step) && <Check className="w-4 h-4 text-[hsl(142,71%,45%)]" />}
                       {currentStep === step && <Loader2 className="w-4 h-4 animate-spin" />}
                       <div className={cn(
                         'w-4 h-4 rounded border-2 flex items-center justify-center transition-colors',
@@ -328,8 +495,8 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
                     </>
                   ) : (
                     <>
-                      <Zap className="w-4 h-4" />
-                      AI Optimize Website
+                      {aiMode === 'cloud' ? <CloudLightning className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                      {aiMode === 'cloud' ? 'Generate with Cloud AI' : 'AI Optimize Website'}
                     </>
                   )}
                 </button>
@@ -345,7 +512,21 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
           {/* ─── Design Tab ─────────────────────── */}
           {tab === 'design' && results?.design && (
             <div className="p-4 space-y-4">
-              <ActionBar onApply={applyResults} applyLabel="Apply Design & Content" />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => applyDesignToBlocks(results)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm bg-primary text-primary-foreground hover:opacity-90 transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  Apply All Design
+                </button>
+                <button
+                  onClick={applyResults}
+                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-xs font-medium bg-accent text-accent-foreground hover:opacity-90 transition-colors"
+                >
+                  Apply All
+                </button>
+              </div>
 
               {/* Color palette */}
               <div className="border border-border rounded-lg p-4">
@@ -398,13 +579,33 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Per-block design apply */}
+              {pages.find((p) => p.id === activePageId)?.blocks.map((block) => (
+                <button
+                  key={block.id}
+                  onClick={() => applySingleBlockDesign(block.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-xs text-muted-foreground hover:bg-secondary transition-colors"
+                >
+                  <Palette className="w-3.5 h-3.5 text-accent" />
+                  Apply design to: <span className="text-foreground font-medium truncate">{block.text?.substring(0, 30) || block.id}</span>
+                </button>
+              ))}
             </div>
           )}
 
           {/* ─── Content Tab ────────────────────── */}
           {tab === 'content' && results?.content && (
             <div className="p-4 space-y-4">
-              <ActionBar onApply={applyResults} applyLabel="Apply Content to Blocks" />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => applyContentToBlocks(results)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm bg-primary text-primary-foreground hover:opacity-90 transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  Apply All Content
+                </button>
+              </div>
 
               <div className="space-y-2">
                 {results.content.blocks.map((bc) => (
@@ -413,15 +614,57 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
                       <span className="px-2 py-0.5 bg-accent/15 text-accent text-[10px] font-semibold rounded-full uppercase">
                         {bc.blockType}
                       </span>
-                      <span className="text-xs text-muted-foreground">{bc.page}</span>
+                      <span className="text-xs text-muted-foreground flex-1">{bc.page}</span>
+                      <button
+                        onClick={() => setEditingBlock(editingBlock === bc.blockId ? null : bc.blockId)}
+                        className="p-1 rounded hover:bg-muted text-muted-foreground"
+                        title="Edit content"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => applySingleBlockContent(bc)}
+                        className="p-1 rounded hover:bg-muted text-accent"
+                        title="Apply this block"
+                      >
+                        <Check className="w-3 h-3" />
+                      </button>
                     </div>
                     <div className="p-3 space-y-1">
-                      <p className="text-sm font-semibold text-foreground">{bc.headline}</p>
-                      <p className="text-xs text-muted-foreground">{bc.subheadline}</p>
-                      <p className="text-xs text-muted-foreground/80 line-clamp-2 mt-1">{bc.description}</p>
-                      <span className="inline-block mt-1.5 px-2.5 py-0.5 bg-primary/10 text-primary text-[10px] font-medium rounded-full">
-                        {bc.cta}
-                      </span>
+                      {editingBlock === bc.blockId ? (
+                        <div className="space-y-2">
+                          <EditableField
+                            label="Headline"
+                            value={bc.headline}
+                            onChange={(v) => updateContentBlock(bc.blockId, 'headline', v)}
+                          />
+                          <EditableField
+                            label="Subheadline"
+                            value={bc.subheadline}
+                            onChange={(v) => updateContentBlock(bc.blockId, 'subheadline', v)}
+                          />
+                          <EditableField
+                            label="Description"
+                            value={bc.description}
+                            onChange={(v) => updateContentBlock(bc.blockId, 'description', v)}
+                            multiline
+                          />
+                          <EditableField
+                            label="CTA"
+                            value={bc.cta}
+                            onChange={(v) => updateContentBlock(bc.blockId, 'cta', v)}
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm font-semibold text-foreground">{bc.headline}</p>
+                          <p className="text-xs text-muted-foreground">{bc.subheadline}</p>
+                          <p className="text-xs text-muted-foreground/80 line-clamp-2 mt-1">{bc.description}</p>
+                          <span className="inline-block mt-1.5 px-2.5 py-0.5 bg-primary/10 text-primary text-[10px] font-medium rounded-full">
+                            {bc.cta}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -438,7 +681,7 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
                   className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-colors"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  Preview Pages
+                  Preview
                 </button>
                 <button
                   onClick={() => exportSEOAsJSON(results.seo!.pages)}
@@ -458,18 +701,36 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
 
               <div className="space-y-2">
                 {results.seo.pages.map((page: SEOPage) => (
-                  <div key={page.slug} className="border border-border rounded-lg p-3">
-                    <p className="text-sm font-semibold text-foreground">{page.title}</p>
-                    <p className="text-xs text-accent font-mono mt-0.5">/{page.slug}</p>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{page.metaDescription}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] text-muted-foreground">
-                        {page.headings.length} headings
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">•</span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {page.faq.length} FAQ
-                      </span>
+                  <div key={page.slug} className="border border-border rounded-lg overflow-hidden">
+                    <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+                      <span className="text-xs text-accent font-mono flex-1">/{page.slug}</span>
+                      <button
+                        onClick={() => setEditingSEO(editingSEO === page.slug ? null : page.slug)}
+                        className="p-1 rounded hover:bg-muted text-muted-foreground"
+                        title="Edit SEO page"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div className="p-3">
+                      {editingSEO === page.slug ? (
+                        <div className="space-y-2">
+                          <EditableField label="Title" value={page.title} onChange={(v) => updateSEOPage(page.slug, 'title', v)} />
+                          <EditableField label="Meta Description" value={page.metaDescription} onChange={(v) => updateSEOPage(page.slug, 'metaDescription', v)} multiline />
+                          <EditableField label="H1" value={page.h1} onChange={(v) => updateSEOPage(page.slug, 'h1', v)} />
+                          <EditableField label="Body Content" value={page.bodyContent} onChange={(v) => updateSEOPage(page.slug, 'bodyContent', v)} multiline />
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm font-semibold text-foreground">{page.title}</p>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{page.metaDescription}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[10px] text-muted-foreground">{page.headings.length} headings</span>
+                            <span className="text-[10px] text-muted-foreground">•</span>
+                            <span className="text-[10px] text-muted-foreground">{page.faq.length} FAQ</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -504,26 +765,61 @@ export const AIToolsPanel: React.FC<AIToolsPanelProps> = ({ onClose }) => {
                       <div className={cn('w-6 h-6 rounded-full flex items-center justify-center text-white', PLATFORM_COLORS[post.platform])}>
                         {PLATFORM_ICONS[post.platform]}
                       </div>
-                      <span className="text-xs font-semibold text-foreground capitalize">{post.platform}</span>
-                      <div className="flex-1" />
+                      <span className="text-xs font-semibold text-foreground capitalize flex-1">{post.platform}</span>
+                      <button
+                        onClick={() => setEditingSMM(editingSMM === i ? null : i)}
+                        className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground"
+                        title="Edit post"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         onClick={() => copyPostCaption(post, i)}
-                        className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground transition-smooth"
+                        className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground"
                         title="Copy caption"
                       >
-                        {copiedPost === i ? <Check className="w-3.5 h-3.5 text-[hsl(var(--success))]" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copiedPost === i ? <Check className="w-3.5 h-3.5 text-[hsl(142,71%,45%)]" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                     </div>
                     <div className="p-3">
-                      <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">{post.caption}</p>
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {post.hashtags.slice(0, 5).map((tag) => (
-                          <span key={tag} className="text-[10px] text-primary font-medium">{tag}</span>
-                        ))}
-                        {post.hashtags.length > 5 && (
-                          <span className="text-[10px] text-muted-foreground">+{post.hashtags.length - 5}</span>
-                        )}
-                      </div>
+                      {editingSMM === i ? (
+                        <div className="space-y-2">
+                          <EditableField
+                            label="Caption"
+                            value={post.caption}
+                            onChange={(v) => updateSMMPost(i, 'caption', v)}
+                            multiline
+                          />
+                          <EditableField
+                            label="Hashtags (space-separated)"
+                            value={post.hashtags.join(' ')}
+                            onChange={(v) => {
+                              if (!results?.smm) return;
+                              setResults({
+                                ...results,
+                                smm: {
+                                  posts: results.smm.posts.map((p, idx) =>
+                                    idx === i ? { ...p, hashtags: v.split(/\s+/).filter(Boolean) } : p
+                                  ),
+                                },
+                              });
+                            }}
+                            multiline
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-xs text-foreground whitespace-pre-line leading-relaxed">{post.caption}</p>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {post.hashtags.slice(0, 5).map((tag) => (
+                              <span key={tag} className="text-[10px] text-primary font-medium">{tag}</span>
+                            ))}
+                            {post.hashtags.length > 5 && (
+                              <span className="text-[10px] text-muted-foreground">+{post.hashtags.length - 5}</span>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -564,15 +860,27 @@ const SelectField: React.FC<{
   </div>
 );
 
-const ActionBar: React.FC<{
-  onApply: () => void;
-  applyLabel: string;
-}> = ({ onApply, applyLabel }) => (
-  <button
-    onClick={onApply}
-    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-semibold text-sm bg-primary text-primary-foreground hover:opacity-90 transition-colors"
-  >
-    <Check className="w-4 h-4" />
-    {applyLabel}
-  </button>
+const EditableField: React.FC<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  multiline?: boolean;
+}> = ({ label, value, onChange, multiline }) => (
+  <div>
+    <label className="text-[10px] font-medium text-muted-foreground mb-0.5 block">{label}</label>
+    {multiline ? (
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+        className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+      />
+    ) : (
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-2 py-1.5 bg-secondary border border-border rounded text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+      />
+    )}
+  </div>
 );

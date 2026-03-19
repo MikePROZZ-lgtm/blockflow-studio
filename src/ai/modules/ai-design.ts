@@ -26,6 +26,21 @@ const INDUSTRY_THEMES: Record<string, Partial<DesignTheme>> = {
     fonts: { heading: 'Cormorant Garamond', body: 'Nunito' },
     buttonStyle: { radius: '20px', hoverEffect: 'glow' },
   },
+  'Food & Hospitality': {
+    colors: { primary: '#b45309', secondary: '#d97706', background: '#fffbeb', accent: '#f59e0b', text: '#1c1917' },
+    fonts: { heading: 'Playfair Display', body: 'Open Sans' },
+    buttonStyle: { radius: '12px', hoverEffect: 'shadow' },
+  },
+  'Education & Training': {
+    colors: { primary: '#4f46e5', secondary: '#7c3aed', background: '#f5f3ff', accent: '#6366f1', text: '#1e1b4b' },
+    fonts: { heading: 'Nunito', body: 'Inter' },
+    buttonStyle: { radius: '10px', hoverEffect: 'scale' },
+  },
+  'Fitness & Sports': {
+    colors: { primary: '#059669', secondary: '#f97316', background: '#f0fdf4', accent: '#10b981', text: '#064e3b' },
+    fonts: { heading: 'Oswald', body: 'Roboto' },
+    buttonStyle: { radius: '6px', hoverEffect: 'scale' },
+  },
 };
 
 const DEFAULT_THEME: DesignTheme = {
@@ -38,7 +53,6 @@ const DEFAULT_THEME: DesignTheme = {
 export const aiDesignModule: AIModule<AIDesignResult> = {
   name: 'AI Design',
   run: async (context: AIContext): Promise<AIDesignResult> => {
-    // Simulate processing delay
     await new Promise((r) => setTimeout(r, 800));
 
     const industryTheme = INDUSTRY_THEMES[context.industry] ?? {};
