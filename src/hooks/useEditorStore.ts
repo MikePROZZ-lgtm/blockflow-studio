@@ -19,6 +19,7 @@ interface EditorStore extends EditorState {
   bringToFront: (blockId: string) => void;
   linkBlockToPage: (blockId: string, pageId: string | undefined) => void;
   saveToHistory: () => void;
+  loadPages: (pages: Page[]) => void;
 }
 
 const createDefaultPage = (name: string): Page => ({
@@ -203,5 +204,13 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   linkBlockToPage: (blockId: string, pageId: string | undefined) => {
     get().saveToHistory();
     get().updateBlock(blockId, { linkedPageId: pageId });
+  },
+
+  loadPages: (pages: Page[]) => {
+    set({
+      pages,
+      activePageId: pages[0]?.id ?? '',
+      selectedBlockId: null,
+    });
   },
 }));

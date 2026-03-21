@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X, Sparkles } from 'lucide-react';
+import { Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X, Sparkles, LayoutTemplate } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import { cn } from '@/lib/utils';
 import { AIToolsPanel } from './AIToolsPanel';
+import { IndustryTemplatesPanel } from './IndustryTemplatesPanel';
 
 export const EditorToolbar: React.FC = () => {
   const {
@@ -20,6 +21,7 @@ export const EditorToolbar: React.FC = () => {
   } = useEditorStore();
 
   const [showAITools, setShowAITools] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const activePage = pages.find((p) => p.id === activePageId);
 
   if (isPreviewMode) {
@@ -100,9 +102,21 @@ export const EditorToolbar: React.FC = () => {
         All Blocks
       </button>
 
+      {/* Templates */}
+      <button
+        onClick={() => { setShowTemplates(!showTemplates); setShowAITools(false); }}
+        className={cn(
+          'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
+          showTemplates ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
+        )}
+      >
+        <LayoutTemplate className="w-4 h-4" />
+        Templates
+      </button>
+
       {/* AI Tools */}
       <button
-        onClick={() => setShowAITools(!showAITools)}
+        onClick={() => { setShowAITools(!showAITools); setShowTemplates(false); }}
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
           showAITools ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
@@ -129,6 +143,9 @@ export const EditorToolbar: React.FC = () => {
       </button>
 
       {/* Panels */}
+      {showTemplates && (
+        <IndustryTemplatesPanel onClose={() => setShowTemplates(false)} />
+      )}
       {showAITools && (
         <AIToolsPanel onClose={() => setShowAITools(false)} />
       )}
