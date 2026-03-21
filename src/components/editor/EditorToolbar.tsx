@@ -19,7 +19,6 @@ export const EditorToolbar: React.FC = () => {
     redo,
   } = useEditorStore();
 
-  const [showTemplates, setShowTemplates] = useState(false);
   const [showAITools, setShowAITools] = useState(false);
   const activePage = pages.find((p) => p.id === activePageId);
 
