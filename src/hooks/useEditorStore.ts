@@ -205,4 +205,12 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     get().saveToHistory();
     get().updateBlock(blockId, { linkedPageId: pageId });
   },
+
+  loadPages: (pages: Page[]) => {
+    set({
+      pages,
+      activePageId: pages[0]?.id ?? '',
+      selectedBlockId: null,
+    });
+  },
 }));
