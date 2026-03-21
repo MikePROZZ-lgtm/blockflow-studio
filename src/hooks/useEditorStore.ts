@@ -19,6 +19,7 @@ interface EditorStore extends EditorState {
   bringToFront: (blockId: string) => void;
   linkBlockToPage: (blockId: string, pageId: string | undefined) => void;
   saveToHistory: () => void;
+  loadPages: (pages: Page[]) => void;
 }
 
 const createDefaultPage = (name: string): Page => ({
