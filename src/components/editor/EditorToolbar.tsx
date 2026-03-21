@@ -129,9 +129,6 @@ export const EditorToolbar: React.FC = () => {
       </button>
 
       {/* Panels */}
-      {showTemplates && (
-        <TemplatePresetPanel onClose={() => setShowTemplates(false)} />
-      )}
       {showAITools && (
         <AIToolsPanel onClose={() => setShowAITools(false)} />
       )}
