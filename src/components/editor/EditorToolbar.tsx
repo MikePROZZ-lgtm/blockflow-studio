@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X, Sparkles } from 'lucide-react';
+import { Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X, Sparkles, LayoutTemplate } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import { cn } from '@/lib/utils';
 import { AIToolsPanel } from './AIToolsPanel';
+import { IndustryTemplatesPanel } from './IndustryTemplatesPanel';
 
 export const EditorToolbar: React.FC = () => {
   const {
