@@ -100,21 +100,9 @@ export const EditorToolbar: React.FC = () => {
         All Blocks
       </button>
 
-      {/* Template presets */}
-      <button
-        onClick={() => { setShowTemplates(!showTemplates); setShowAITools(false); }}
-        className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
-          showTemplates ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
-        )}
-      >
-        <Palette className="w-4 h-4" />
-        Templates
-      </button>
-
       {/* AI Tools */}
       <button
-        onClick={() => { setShowAITools(!showAITools); setShowTemplates(false); }}
+        onClick={() => setShowAITools(!showAITools)}
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
           showAITools ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
