@@ -163,6 +163,9 @@ export const EditorToolbar: React.FC = () => {
       {showAITools && (
         <AIToolsPanel onClose={() => setShowAITools(false)} />
       )}
+      {showSEOGrowth && (
+        <SEOGrowthPanel onClose={() => setShowSEOGrowth(false)} />
+      )}
     </div>
   );
 };
