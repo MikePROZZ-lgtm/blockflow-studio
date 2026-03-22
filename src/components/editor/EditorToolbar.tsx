@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X, Sparkles, LayoutTemplate } from 'lucide-react';
+import { Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X, Sparkles, LayoutTemplate, TrendingUp } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import { cn } from '@/lib/utils';
 import { AIToolsPanel } from './AIToolsPanel';
 import { IndustryTemplatesPanel } from './IndustryTemplatesPanel';
+import { SEOGrowthPanel } from './SEOGrowthPanel';
 
 export const EditorToolbar: React.FC = () => {
   const {
@@ -22,6 +23,7 @@ export const EditorToolbar: React.FC = () => {
 
   const [showAITools, setShowAITools] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showSEOGrowth, setShowSEOGrowth] = useState(false);
   const activePage = pages.find((p) => p.id === activePageId);
 
   if (isPreviewMode) {
@@ -104,7 +106,7 @@ export const EditorToolbar: React.FC = () => {
 
       {/* Templates */}
       <button
-        onClick={() => { setShowTemplates(!showTemplates); setShowAITools(false); }}
+        onClick={() => { setShowTemplates(!showTemplates); setShowAITools(false); setShowSEOGrowth(false); }}
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
           showTemplates ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
@@ -116,7 +118,7 @@ export const EditorToolbar: React.FC = () => {
 
       {/* AI Tools */}
       <button
-        onClick={() => { setShowAITools(!showAITools); setShowTemplates(false); }}
+        onClick={() => { setShowAITools(!showAITools); setShowTemplates(false); setShowSEOGrowth(false); }}
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
           showAITools ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
@@ -124,6 +126,18 @@ export const EditorToolbar: React.FC = () => {
       >
         <Sparkles className="w-4 h-4" />
         AI Tools
+      </button>
+
+      {/* SEO Growth */}
+      <button
+        onClick={() => { setShowSEOGrowth(!showSEOGrowth); setShowAITools(false); setShowTemplates(false); }}
+        className={cn(
+          'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
+          showSEOGrowth ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
+        )}
+      >
+        <TrendingUp className="w-4 h-4" />
+        SEO Growth
       </button>
 
       <div className="w-px h-6 bg-border mx-1" />
@@ -148,6 +162,9 @@ export const EditorToolbar: React.FC = () => {
       )}
       {showAITools && (
         <AIToolsPanel onClose={() => setShowAITools(false)} />
+      )}
+      {showSEOGrowth && (
+        <SEOGrowthPanel onClose={() => setShowSEOGrowth(false)} />
       )}
     </div>
   );
