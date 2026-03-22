@@ -106,7 +106,7 @@ export const EditorToolbar: React.FC = () => {
 
       {/* Templates */}
       <button
-        onClick={() => { setShowTemplates(!showTemplates); setShowAITools(false); }}
+        onClick={() => { setShowTemplates(!showTemplates); setShowAITools(false); setShowSEOGrowth(false); }}
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
           showTemplates ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
@@ -118,7 +118,7 @@ export const EditorToolbar: React.FC = () => {
 
       {/* AI Tools */}
       <button
-        onClick={() => { setShowAITools(!showAITools); setShowTemplates(false); }}
+        onClick={() => { setShowAITools(!showAITools); setShowTemplates(false); setShowSEOGrowth(false); }}
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
           showAITools ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
@@ -126,6 +126,18 @@ export const EditorToolbar: React.FC = () => {
       >
         <Sparkles className="w-4 h-4" />
         AI Tools
+      </button>
+
+      {/* SEO Growth */}
+      <button
+        onClick={() => { setShowSEOGrowth(!showSEOGrowth); setShowAITools(false); setShowTemplates(false); }}
+        className={cn(
+          'flex items-center gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-smooth',
+          showSEOGrowth ? 'bg-accent text-accent-foreground' : 'bg-secondary text-secondary-foreground hover:bg-muted'
+        )}
+      >
+        <TrendingUp className="w-4 h-4" />
+        SEO Growth
       </button>
 
       <div className="w-px h-6 bg-border mx-1" />
