@@ -14,7 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      generated_seo_pages: {
+        Row: {
+          body_content: string
+          category: string
+          city: string
+          created_at: string
+          district: string | null
+          faq: Json
+          h1: string
+          headings: Json
+          id: string
+          industry: string
+          intent: string | null
+          internal_links: Json
+          meta_description: string
+          service_name: string
+          slug: string
+          structured_data: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body_content: string
+          category: string
+          city: string
+          created_at?: string
+          district?: string | null
+          faq?: Json
+          h1: string
+          headings?: Json
+          id?: string
+          industry: string
+          intent?: string | null
+          internal_links?: Json
+          meta_description: string
+          service_name: string
+          slug: string
+          structured_data?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body_content?: string
+          category?: string
+          city?: string
+          created_at?: string
+          district?: string | null
+          faq?: Json
+          h1?: string
+          headings?: Json
+          id?: string
+          industry?: string
+          intent?: string | null
+          internal_links?: Json
+          meta_description?: string
+          service_name?: string
+          slug?: string
+          structured_data?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
