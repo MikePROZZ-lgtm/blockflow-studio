@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X, Sparkles, LayoutTemplate } from 'lucide-react';
+import { Monitor, Smartphone, Undo2, Redo2, Layers, Eye, Rocket, X, Sparkles, LayoutTemplate, TrendingUp } from 'lucide-react';
 import { useEditorStore } from '@/hooks/useEditorStore';
 import { cn } from '@/lib/utils';
 import { AIToolsPanel } from './AIToolsPanel';
 import { IndustryTemplatesPanel } from './IndustryTemplatesPanel';
+import { SEOGrowthPanel } from './SEOGrowthPanel';
 
 export const EditorToolbar: React.FC = () => {
   const {
