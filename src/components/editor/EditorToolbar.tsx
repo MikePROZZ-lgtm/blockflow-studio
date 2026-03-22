@@ -23,6 +23,7 @@ export const EditorToolbar: React.FC = () => {
 
   const [showAITools, setShowAITools] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showSEOGrowth, setShowSEOGrowth] = useState(false);
   const activePage = pages.find((p) => p.id === activePageId);
 
   if (isPreviewMode) {
