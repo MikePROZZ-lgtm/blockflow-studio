@@ -169,6 +169,12 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+  };
+
   const handleLinkPointClick = (e: React.MouseEvent, side: 'top' | 'right' | 'bottom' | 'left') => {
     e.stopPropagation();
     setShowLinkMenu(true);
@@ -255,6 +261,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
           contentEditable={!isPreview}
           suppressContentEditableWarning
           onBlur={handleTextChange}
+          onPaste={handlePaste}
           onMouseDown={handleTextMouseDown}
           className={cn(
             "text-content absolute p-3 outline-none overflow-hidden rounded-lg",
