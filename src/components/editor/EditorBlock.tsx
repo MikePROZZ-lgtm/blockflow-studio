@@ -261,6 +261,7 @@ export const EditorBlock: React.FC<EditorBlockProps> = ({
           contentEditable={!isPreview}
           suppressContentEditableWarning
           onBlur={handleTextChange}
+          onPaste={handlePaste}
           onMouseDown={handleTextMouseDown}
           className={cn(
             "text-content absolute p-3 outline-none overflow-hidden rounded-lg",
